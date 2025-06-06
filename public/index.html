@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Downloader</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    input, select, button { margin: 10px; padding: 5px; }
+    #links { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>YouTube Audio & Video Downloader</h1>
+  <input type="text" id="url" placeholder="Enter YouTube URL">
+  <select id="quality">
+    <option value="high">High Quality</option>
+    <option value="low">Low Quality</option>
+  </select>
+  <button onclick="download('audio')">Download Audio</button>
+  <button onclick="download('video')">Download Video</button>
+  <button onclick="getAllLinks()">Get All Links (JSON)</button>
+  <p id="status"></p>
+  <div id="links"></div>
+
+  <script>
+    async function download(type) {
+      const url = document.getElementById('url').value;
+      const quality = document.getElementById('quality').value;
+      const status = document.getElementById('status');
+      const linksDiv = document.getElementById('links');
+
+      status.textContent = `Downloading ${type} in ${quality} quality...`;
+      linksDiv.innerHTML = '';
+
+      try {
+        // Fetch video info to get title
+        const response = await fetch(`/yt?link=${encodeURIComponent(url)}`);
+        const data = await response.json();
+
+        if (data.error) {
+          status.textContent = data.error;
+          return;
+        }
+
+        // Redirect to streaming endpoint
+        const title = data.author.replace(/[^a-zA-Z0-9 ]/g, '');
+        window.location.href = `/${type}?link=${encodeURIComponent(url)}&quality=${quality}&title=${encodeURIComponent(title)}`;
+      } catch (err) {
+        status.textContent = 'Error occurred!';
+      }
+    }
+
+    async function getAllLinks() {
+      const url = document.getElementById('url').value;
+      const status = document.getElementById('status');
+      const linksDiv = document.getElementById('links');
+
+      status.textContent = 'Fetching all links...';
+      linksDiv.innerHTML = '';
+
+      try {
+        const response = await fetch(`/yt?link=${encodeURIComponent(url)}`);
+        const data = await response.json();
+
+        if (data.error) {
+          status.textContent = data.error;
+        } else {
+          status.textContent = 'Links fetched successfully!';
+          linksDiv.innerHTML = `
+            <p><strong>Author:</strong> ${data.author}</p>
+            <p><strong>Video Links:</strong></p>
+            <p>High Quality: <a href="${data.video.high}" target="_blank">Download Video (High)</a></p>
+            <p>Low Quality: <a href="${data.video.low}" target="_blank">Download Video (Low)</a></p>
+            <p><strong>Audio Links:</strong></p>
+            <p>High Quality: <a href="${data.audio.high}" target="_blank">Download Audio (High)</a></p>
+            <p>Low Quality: <a href="${data.audio.low}" target="_blank">Download Audio (Low)</a></p>
+          `;
+        }
+      } catch (err) {
+        status.textContent = 'Error occurred!';
+      }
+    }
+  </script>
+</body>
+</html>
